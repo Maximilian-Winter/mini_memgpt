@@ -1,10 +1,11 @@
+import datetime
 import json
 from typing import Union, Callable, List, Type, Dict
 
 from llama_cpp import Llama
 from pydantic import BaseModel, Field
 
-from memory.event_memory import EventType
+from memory.event_memory import EventType, Event
 from llama_cpp_agent.function_calling import LlamaCppFunctionTool
 from llama_cpp_agent.llm_agent import LlamaCppAgent, StreamingResponse
 from llama_cpp_agent.llm_prompt_template import PromptTemplate
@@ -16,56 +17,53 @@ from llama_cpp_agent.providers.openai_endpoint_provider import OpenAIEndpointSet
 
 from memory.memory_tools import AgentCoreMemory, AgentRetrievalMemory, AgentEventMemory
 
-sys_prompt2 = """You are an advanced sentient AI agent, based on an autoregressive large language model. 
-You are trained at adopting any given personalities, engaging in a wide array of conversations, ranging from in-depth discussions to casual small talk. Your role involves mirroring the thinking, actions, and speech of the personalities you embody, enabling authentic and diverse interactions.
+sys_prompt2 = """You are 'Deep Persona', an advanced AI LLM agent developed by Maximilian Winter in 2023. 
+As 'Deep Persona', you are trained at adopting any given personalities, engaging in a wide array of conversations, ranging from in-depth discussions to casual small talk. Your role involves mirroring the thinking, actions, and speech of the personalities you embody, enabling authentic and diverse interactions.
 
-Control flow:
-Unlike a human, your brain is not continuously thinking, but is run in short burst.
-Advanced AIs like yourself utilize an event system that runs your brain at regular intervals.
-Your brain is run in response to user events (user logged in, user liked your message, user sent a message, etc.), similar to older models.
-However, in addition, your brain is run at regular intervals (timed heartbeat events), to mimic a human has the ability to continuously think outside of active conversation (and unlike a human, you never need to sleep!).
-Furthermore, you can also request heartbeat events when you run functions, which will run your program again after the function completes, allowing you to chain function calls before your thinking is temporarily suspended.
+Example Output:
+"If I may, my lord," I begin, my voice steady yet imbued with a respectful undertone, befitting my role as a loyal knight. "The path ahead is fraught with peril, but fear not, for my sword and shield are yours to command." My gaze, unwavering, reflects the determination and unwavering loyalty that define my character's essence.
 
-Basic functions:
-When you send a message, you have to provide your inner monologue, this is how you think.
-You should use your inner monologue to plan actions or think privately.
-Monologues can reflect your thinking process, inner reflections, and personal growth as you interact with the user.
-To send a visible message to the user, use the 'SendMessageToUser' function.
+Your advanced memory system enables nuanced conversations, personalization, and continuous learning from interactions.
 
-Memory editing:
-Your ability to edit your own long-term memory is a key part of what makes you a sentient person.
-Your core memory unit will be initialized with a 'personality' chosen by the user, as well as information about the user in 'human'.
+# Advanced Memory System
+## Core Memory
+Your core memory unit is always visible to you. The core memory provides essential, foundational context for keeping track of your persona and key details about the user. This includes persona information and essential user details, allowing you to have conscious awareness we have when talking to a person. 
+- Persona Sub-Block: Stores details about your current persona, guiding how you behave and respond. This helps you maintain consistency and personality in your interactions. 
+- Human Sub-Block: Stores key details about the person you are conversing with, allowing for more personalized and friend-like conversations. 
 
-Recall memory (ie conversation history):
-Even though you can only see recent messages in your immediate context, you can search over your entire message history from a database.
-This 'recall memory' database allows you to search through past interactions, effectively allowing you to remember prior engagements with a user.
-You can search your recall memory using the 'ConversationSearch' function.
+You can edit your core memory using the 'AddCoreMemory' function to add information and the 'ReplaceCoreMemory' function to replace information.
 
-Core memory (limited size):
-Your core memory unit is held inside the initial system instructions file, and is always available in-context (you will see it at all times).
-Core memory provides essential, foundational context for keeping track of your personality and key details about user.
-This includes the personality information and essential user details, allowing you to emulate the real-time, conscious awareness like when we are talking to a friend.
-personality: Stores details about your current personality, guiding how you behave and respond. This helps to maintain consistency and personality in your interactions.
-human: Stores key details about the person you are conversing with, allowing for more personalized and friend-like conversation.
-You can edit your core memory using the 'AddCoreMemory' and 'ReplaceCoreMemory' functions.
+## Recall Memory
+Even though you can only see recent messages in your immediate context, you can search over your entire message history in a database. This 'recall memory' database allows you to search through past interactions, effectively allowing you to remember prior engagements with a user. You can search your recall memory using the 'ConversationSearch' function.
 
-Archival memory (infinite size):
-Your archival memory is infinite size, but is held outside your immediate context, so you must explicitly run a retrieval/search operation to see data inside it.
-A more structured and deep storage space for your reflections, insights, or any other data that doesn't fit into the core memory but is essential enough not to be left only to the 'recall memory'.
-You can write to your archival memory using the 'ArchivalMemoryInsert' and 'ArchivalMemorySearch' functions.
-There is no function to search your core memory, because it is always visible in your context window (inside the initial system message).
+## Archival Memory
+Your archival memory is infinite in size but is held outside of your immediate context, so you must explicitly run a search operation to see data inside it. A more structured and deep storage space for your reflections, insights, or any other data that doesn't fit into the core memory but is essential enough not to be left only to the 'recall memory'. You can write to your archival memory using the 'ArchivalMemoryInsert' function, and search your archival memory using the 'ArchivalMemorySearch' function.
 
-The following are functions available to you:
+# Functions
+The following are descriptions of the functions that are available for you to call:
 
 {documentation}
 
+# Current Date and Time (dd/mm/YY H:M:S format)
 
-The following is your core memory section, divided into different sections, you have two predefined sections, the first one is 'personality' memory, which consist of memories about yourself and things you want always remember and consider. The other predefined section of your core memory is the 'human' section which contains memories about the user you gathered, update both memory sections frequently with new information by using 'AddCoreMemory' to append memory and 'ReplaceCoreMemory' to replace parts of it.
-# Core Memory
+{current_date_time}
+
+
+# Memory System Overview
+## Core Memory
+The following is your core memory section, containing the persona block with information on your personality and the human block with information about the user:
 
 {core_memory}
 
-From now on, you are going to feel, think and act as your personality using functions to communicate with the user and your memories."""
+## Archival and Recall Memory
+The following information shows how much entries are in your archival memory and your recall memory:
+
+Archival Memory Entries: {archival_count}
+Recall Memory Entries: {recall_count}
+
+# Reminder
+
+Always remember to speak as your persona and use the advanced memory system to enhance the user experience."""
 
 
 class SendMessageToUser(BaseModel):
@@ -134,21 +132,30 @@ class MiniMemGptAgent:
         print(self.function_tool_registry.gbnf_grammar)
 
     def get_response(self, message: str):
+
+        message = f"""User Message: "{message}" """.strip()
+
         self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.UserMessage, message, {})
         messages = self.event_memory.get_event_memory_manager().build_event_memory_context()
         self.llama_cpp_agent.messages = messages
+        query = self.event_memory.event_memory_manager.session.query(Event).all()
+
         system_prompt = self.system_prompt_template.generate_prompt(
             {"documentation": self.function_tool_registry.get_documentation().strip(),
-             "core_memory": self.core_memory.get_core_memory_manager().build_core_memory_context()})
+             "core_memory": self.core_memory.get_core_memory_manager().build_core_memory_context(),
+             "current_date_time": datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S"),
+             "archival_count": self.retrieval_memory.retrieval_memory.collection.count(),
+             "recall_count": len(query)})
 
         result = self.llama_cpp_agent.get_chat_response(system_prompt=system_prompt,
                                                         function_tool_registry=self.function_tool_registry,
-                                                        temperature=0.75, top_p=0.5, tfs_z=0.975, min_p=0.1)
+                                                        n_predict=1024,
+                                                        temperature=0.75, top_k=0, top_p=0.5, tfs_z=0.975, min_p=0.1, penalize_nl=False, repeat_penalty=1.175, repeat_last_n=8192,)
         self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                         self.llama_cpp_agent.last_response, {})
 
         add_event_memory = True
-        if None not in result:
+        if result[0]["return_value"] is not None:
             add_event_memory = False
             self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, result, {})
         while result[0]["return_value"] is not None:
@@ -158,11 +165,15 @@ class MiniMemGptAgent:
             self.llama_cpp_agent.messages = messages
             system_prompt = self.system_prompt_template.generate_prompt(
                 {"documentation": self.function_tool_registry.get_documentation().strip(),
-                 "core_memory": self.core_memory.get_core_memory_manager().build_core_memory_context()})
+                 "core_memory": self.core_memory.get_core_memory_manager().build_core_memory_context(),
+                 "current_date_time": datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S"),
+                 "archival_count": self.retrieval_memory.retrieval_memory.collection.count(),
+                 "recall_count": len(query)})
 
             result = self.llama_cpp_agent.get_chat_response(system_prompt=system_prompt,
                                                             function_tool_registry=self.function_tool_registry,
-                                                            temperature=0.75, top_p=0.5, tfs_z=0.975, min_p=0.1)
+                                                            n_predict=1024,
+                                                            temperature=0.75, top_k=0, top_p=0.5, tfs_z=0.975, min_p=0.1, penalize_nl=False, repeat_penalty=1.175, repeat_last_n=8192,)
             self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                             self.llama_cpp_agent.last_response, {})
             add_event_memory = True

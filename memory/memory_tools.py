@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 
-from .event_memory import EventType
+from .event_memory import EventType, Base
 from .event_memory_manager import EventMemoryManager
 from llama_cpp_agent.function_calling import LlamaCppFunctionTool
 from .core_memory_manager import CoreMemoryManager
@@ -153,6 +153,7 @@ class AgentEventMemory:
     def __init__(self, db_path='sqlite:///events.db'):
         self.engine = create_engine(db_path)
         session_factory = sessionmaker(bind=self.engine)
+        Base.metadata.create_all(self.engine)
         self.Session = scoped_session(session_factory)
         self.session = self.Session()
         self.event_memory_manager = EventMemoryManager(self.session)

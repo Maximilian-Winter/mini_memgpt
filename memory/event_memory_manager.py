@@ -66,8 +66,9 @@ class EventMemoryManager:
         if start_date and end_date:
             query = query.filter(Event.timestamp.between(start_date, end_date))
 
-        for keyword in content_keywords:
-            query = query.filter(Event.content.contains(keyword))
+        if content_keywords is not None:
+            for keyword in content_keywords:
+                query = query.filter(Event.content.contains(keyword))
 
         if keywords:
             for value in keywords:
