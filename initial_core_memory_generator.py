@@ -26,7 +26,7 @@ def load_files_and_generate_json(file_path1, file_path2):
             "personality": text1
         },
         "human": {
-            "personality": text2
+            "name": text2
         }
     }
 

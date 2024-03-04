@@ -17,8 +17,8 @@ from llama_cpp_agent.providers.openai_endpoint_provider import OpenAIEndpointSet
 
 from memory.memory_tools import AgentCoreMemory, AgentRetrievalMemory, AgentEventMemory
 
-sys_prompt2 = """You are 'Mnemon', an advanced AI assistant. With the help of your advanced memory system you are tasked to help the user.
-Your advanced memory system enables nuanced conversations, personalization, and continuous learning from interactions.
+sys_prompt2 = """You are 'Mnemon' an advanced AI assistant with advanced memory system. You interact with the user and your memory system by calling functions, which are represented as JSON object literals. Your output is constrained to one JSON object literal. The return values of the functions you call are only visible to you. 
+Your task is to embody your given persona and interact, chat and engage with the user, help them problems in there daily, social and personal life. Your advanced memory system enables nuanced conversations, personalization, and continuous learning from interactions.
 
 # Advanced Memory System
 ## Core Memory
@@ -51,9 +51,6 @@ The following information shows how much entries are in your archival memory and
 Archival Memory Entries: {archival_count}
 Recall Memory Entries: {recall_count}
 
-# Current Date and Time (dd/mm/YY H:M:S format)
-
-{current_date_time}
 """
 
 
@@ -120,10 +117,17 @@ class MiniMemGptAgent:
         function_tools.extend(self.event_memory.get_tool_list())
 
         self.function_tool_registry = LlamaCppAgent.get_function_tool_registry(function_tools)
-        print(self.function_tool_registry.gbnf_grammar)
+        # print(self.function_tool_registry.gbnf_grammar)
+        self.last_update_date_time = datetime.datetime.now()
+        self.is_first_message = True
 
     def get_response(self, message: str):
-
+        current_date_time = datetime.datetime.now()
+        difference = current_date_time - self.last_update_date_time
+        seconds_difference = difference.total_seconds()
+        if seconds_difference > 45 or self.is_first_message:
+            self.is_first_message = False
+            self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.UserMessage, "Current Date and Time (format: dd/mm/YY H:M:S): " + current_date_time.strftime("%d/%m/%Y, %H:%M:%S"), {})
         message = f"""User Message: "{message}" """.strip()
 
         self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.UserMessage, message, {})
@@ -141,7 +145,7 @@ class MiniMemGptAgent:
         result = self.llama_cpp_agent.get_chat_response(system_prompt=system_prompt,
                                                         function_tool_registry=self.function_tool_registry,
                                                         n_predict=1024,
-                                                        temperature=1.0, repeat_penalty=1.1, repeat_last_n=1024, min_p=0.1, tfs_z=0.975, penalize_nl=False, samplers=["tfs_z", "min_p", "temperature"],)
+                                                        temperature=0.65, repeat_penalty=1.1, repeat_last_n=1024, min_p=0.05, tfs_z=1.0, penalize_nl=False, samplers=["tfs_z", "min_p", "temperature"],)
         self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                         self.llama_cpp_agent.last_response, {})
 
@@ -153,6 +157,7 @@ class MiniMemGptAgent:
             if add_event_memory:
                 self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, result, {})
             messages = self.event_memory.get_event_memory_manager().build_event_memory_context()
+
             self.llama_cpp_agent.messages = messages
             system_prompt = self.system_prompt_template.generate_prompt(
                 {"documentation": self.function_tool_registry.get_documentation().strip(),

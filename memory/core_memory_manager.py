@@ -40,8 +40,8 @@ class CoreMemoryManager:
             context += f"{{\n"
             context += f"""   "{key}": {{\n"""
             for key2, item2 in item.items():
-                context += f"""       "{key2}": {{\n{self.format_multiline_description(item2.strip(), 2)}\n   }}\n}}\n"""
-
+                context += f"""       "{key2}": {{\n{self.format_multiline_description(item2.strip(), 2)}\n       }}\n   }}\n"""
+            context += f"}}\n"
         return context
 
     def format_multiline_description(self, description: str, indent_level: int) -> str:

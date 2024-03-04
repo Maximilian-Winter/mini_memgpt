@@ -51,9 +51,9 @@ class ConversationSearch(BaseModel):
     inner_thoughts: str = Field(..., description="Your inner thoughts while writing the search query.")
     event_types: Optional[list[EventType]] = Field(...,
                                                    description="Event types to search. Can be system, 'user', 'assistant' or 'function'")
-    start_date: Optional[str] = Field(..., description='Start date to search events from. Format: "%Y-%m-%d %H:%M" eg. 1921-12-01 19:00')
-    end_date: Optional[str] = Field(..., description='End date to search events from. Format: "%Y-%m-%d %H:%M" eg. 1921-12-01 19:00')
-    keywords: Optional[List[str]] = Field(..., description='End date to search events from. Format: "%Y-%m-%d %H:%M" eg. 1921-12-01 19:00')
+    start_date: Optional[str] = Field(..., description='Start date to search events from. Format: "dd/mm/YY, H:M:S" eg. 01/01/2024, 08:00:30')
+    end_date: Optional[str] = Field(..., description='End date to search events from. Format: "dd/mm/YY, H:M:S" eg. 04/02/2024, 18:57:29')
+    keywords: Optional[List[str]] = Field(..., description='End date to search events from. Format: "dd/mm/YY, H:M:S" eg. 08/04/2023, 12:32:30')
     require_heartbeat: bool = Field(...,
                                     description="Set this to true to get control back after execution, to chain functions together.")
 
@@ -61,9 +61,9 @@ class ConversationSearch(BaseModel):
         parsed_start_datetime = None
         parsed_end_datetime = None
         if self.start_date:
-            parsed_start_datetime = datetime.strptime(self.start_date, "%Y-%m-%d %H:%M")
+            parsed_start_datetime = datetime.strptime(self.start_date, "%d/%m/%Y, %H:%M:%S")
         if self.end_date:
-            parsed_end_datetime = datetime.strptime(self.end_date, "%Y-%m-%d %H:%M")
+            parsed_end_datetime = datetime.strptime(self.end_date, "%d/%m/%Y, %H:%M:%S")
 
         return event_memory_manager.query_events(event_types=self.event_types, keywords=self.keywords,
                                                  start_date=parsed_start_datetime, end_date=parsed_end_datetime)
@@ -88,7 +88,7 @@ class ArchivalMemoryInsert(BaseModel):
     """
     inner_thoughts: str = Field(..., description="Your inner thoughts while adding archival memory.")
     memory: str = Field(..., description="The memory to be added to the archival memory.")
-    importance: float = Field(..., description="The importance of the memory to be added to the archival memory.")
+    importance: float = Field(..., description="The importance of the memory to be added to the archival memory. Value from 1 to 10")
     require_heartbeat: bool = Field(...,
                                     description="Set this to true to get control back after execution, to chain functions together.")
 
