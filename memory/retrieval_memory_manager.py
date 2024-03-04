@@ -1,3 +1,5 @@
+import json
+
 from .retrieval_memory import RetrievalMemory
 
 
@@ -17,5 +19,5 @@ class RetrievalMemoryManager:
         Retrieves memories from the memory stream based on a query.
         """
         memories = self.retrieval_memory.retrieve_memories(query, max_results)
-        formatted_memories = "\n".join([str(memory) for memory in memories])
+        formatted_memories = "\n".join([json.dumps(memory, indent=4) for memory in memories])
         return formatted_memories if formatted_memories else "No memories found matching the query."
