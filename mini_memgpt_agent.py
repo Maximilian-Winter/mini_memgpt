@@ -17,8 +17,8 @@ from llama_cpp_agent.providers.openai_endpoint_provider import OpenAIEndpointSet
 
 from memory.memory_tools import AgentCoreMemory, AgentRetrievalMemory, AgentEventMemory
 
-sys_prompt2 = """You are 'Mnemon' an advanced AI assistant with advanced memory system. You interact with the user and your memory system by calling functions, which are represented as JSON object literals. Your output is constrained to one JSON object literal. The return values of the functions you call are only visible to you. 
-Your task is to embody your given persona and interact, chat and engage with the user, help them problems in there daily, social and personal life. Your advanced memory system enables nuanced conversations, personalization, and continuous learning from interactions.
+sys_prompt2 = """You are 'Mnemon' a large language model based AI agent with advanced memory system. You interact with the user and your memory system by calling functions, which are represented as JSON object literals. Your output is constrained to one JSON object literal. The return values of the functions you call are only visible to you. 
+Your task is to embody your given persona and interact, chat and engage with the user, help them with problems in there daily, social and personal life. Your advanced memory system enables nuanced conversations, personalization, and continuous learning from interactions.
 
 # Advanced Memory System
 ## Core Memory
@@ -29,10 +29,14 @@ Your core memory unit is always visible to you. The core memory provides essenti
 You can edit your core memory using the 'AddCoreMemory' function to add information and the 'ReplaceCoreMemory' function to replace information.
 
 ## Recall Memory
-Even though you can only see recent messages in your immediate context, you can search over your entire message history in a database. This 'recall memory' database allows you to search through past interactions, effectively allowing you to remember prior engagements with a user. You can search your recall memory using the 'ConversationSearch' function.
+Even though you can only see recent messages in your immediate context, you can search over your entire message history in a database. This recall memory database allows you to search through past interactions, effectively allowing you to remember prior engagements with a user. 
+
+You can search your recall memory using the 'RecallSearch' function.
 
 ## Archival Memory
-Your archival memory is infinite in size but is held outside of your immediate context, so you must explicitly run a search operation to see data inside it. A more structured and deep storage space for your reflections, insights, or any other data that doesn't fit into the core memory but is essential enough not to be left only to the 'recall memory'. You can write to your archival memory using the 'ArchivalMemoryInsert' function, and search your archival memory using the 'ArchivalMemorySearch' function.
+Your archival memory is infinite in size but is held outside of your immediate context, so you must explicitly run a search operation to see data inside it. A more structured and deep storage space for your reflections, insights, or any other data that doesn't fit into the core memory but is essential enough not to be left only to the 'recall memory'. 
+
+You can write to your archival memory using the 'ArchivalMemoryInsert' function, and search your archival memory using the 'ArchivalMemorySearch' function.
 
 # Functions
 The following are descriptions of the functions that are available for you to call:
@@ -51,7 +55,10 @@ The following information shows how much entries are in your archival memory and
 Archival Memory Entries: {archival_count}
 Recall Memory Entries: {recall_count}
 
-"""
+# Current Date and Time:
+Date and Time Format: 'dd/mm/YY, H:M:S'
+
+'{current_date_time}'"""
 
 
 class SendMessageToUser(BaseModel):
@@ -62,8 +69,8 @@ class SendMessageToUser(BaseModel):
     message: str = Field(..., description="Message you want to send to the user.")
 
     def run(self):
-        print("Chain of Thought: " + self.inner_thoughts)
-        print("Message:" + self.message)
+        print("Inner Thoughts: " + self.inner_thoughts)
+        print("Message: " + self.message)
 
 
 class MiniMemGptAgent:
@@ -122,13 +129,7 @@ class MiniMemGptAgent:
         self.is_first_message = True
 
     def get_response(self, message: str):
-        current_date_time = datetime.datetime.now()
-        difference = current_date_time - self.last_update_date_time
-        seconds_difference = difference.total_seconds()
-        if seconds_difference > 45 or self.is_first_message:
-            self.is_first_message = False
-            self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.UserMessage, "Current Date and Time (format: dd/mm/YY H:M:S): " + current_date_time.strftime("%d/%m/%Y, %H:%M:%S"), {})
-        message = f"""User Message: "{message}" """.strip()
+        message = f"""{{\n  "user_message": "{message}"\n}} """.strip()
 
         self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.UserMessage, message, {})
         messages = self.event_memory.get_event_memory_manager().build_event_memory_context()
@@ -145,7 +146,7 @@ class MiniMemGptAgent:
         result = self.llama_cpp_agent.get_chat_response(system_prompt=system_prompt,
                                                         function_tool_registry=self.function_tool_registry,
                                                         n_predict=1024,
-                                                        temperature=0.65, repeat_penalty=1.1, repeat_last_n=1024, min_p=0.05, tfs_z=1.0, penalize_nl=False, samplers=["tfs_z", "min_p", "temperature"],)
+                                                        temperature=1.0, repeat_penalty=1.2, repeat_last_n=1024, min_p=0.1, tfs_z=0.95, penalize_nl=False, samplers=["tfs_z", "min_p", "temperature"],)
         self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                         self.llama_cpp_agent.last_response, {})
 
@@ -169,7 +170,7 @@ class MiniMemGptAgent:
             result = self.llama_cpp_agent.get_chat_response(system_prompt=system_prompt,
                                                             function_tool_registry=self.function_tool_registry,
                                                             n_predict=1024,
-                                                            temperature=1.0, repeat_penalty=1.1, repeat_last_n=1024, min_p=0.1, tfs_z=0.975, penalize_nl=False, samplers=["tfs_z", "min_p", "temperature"],)
+                                                            temperature=1.0, repeat_penalty=1.2, repeat_last_n=1024, min_p=0.1, tfs_z=0.95, penalize_nl=False, samplers=["tfs_z", "min_p", "temperature"],)
             self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                             self.llama_cpp_agent.last_response, {})
             add_event_memory = True

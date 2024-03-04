@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
@@ -12,19 +13,24 @@ from .core_memory_manager import CoreMemoryManager
 from .retrieval_memory_manager import RetrievalMemoryManager, RetrievalMemory
 
 
+class CoreMemoryKey(Enum):
+    PERSONA: str = "persona"
+    HUMAN: str = "human"
+
+
 class AddCoreMemory(BaseModel):
     """
     Add a new entry to the core memory.
     """
     inner_thoughts: str = Field(..., description="Your inner thoughts.")
-    key: str = Field(..., description="The key identifier for the core memory entry.")
+    key: CoreMemoryKey = Field(..., description="The key identifier for the core memory entry.")
     field: str = Field(..., description="A secondary key or field within the core memory entry.")
     value: str = Field(..., description="The value or data to be stored in the specified core memory entry.")
     require_heartbeat: bool = Field(...,
                                     description="Set this to true to get control back after execution, to chain functions together.")
 
     def run(self, core_memory_manager: CoreMemoryManager):
-        return core_memory_manager.add_to_core_memory(self.key, self.field, self.value)
+        return core_memory_manager.add_to_core_memory(self.key.value, self.field, self.value)
 
 
 # Replace Core Memory Model
@@ -33,7 +39,7 @@ class ReplaceCoreMemory(BaseModel):
     Replace an entry in the core memory.
     """
     inner_thoughts: str = Field(..., description="Your inner thoughts.")
-    key: str = Field(..., description="The key identifier for the core memory entry.")
+    key: CoreMemoryKey = Field(..., description="The key identifier for the core memory entry.")
     field: str = Field(..., description="The specific field within the core memory entry to be replaced.")
     new_value: str = Field(...,
                            description="The new value to replace the existing data in the specified core memory field.")
@@ -41,19 +47,37 @@ class ReplaceCoreMemory(BaseModel):
                                     description="Set this to true to get control back after execution, to chain functions together.")
 
     def run(self, core_memory_manager: CoreMemoryManager):
-        return core_memory_manager.replace_in_core_memory(self.key, self.field, self.value)
+        return core_memory_manager.replace_in_core_memory(self.key.value, self.field, self.value)
 
 
-class ConversationSearch(BaseModel):
+# Remove Core Memory Model
+class RemoveCoreMemory(BaseModel):
+    """
+    Remove an entry from the core memory.
+    """
+    inner_thoughts: str = Field(..., description="Your inner thoughts.")
+    key: CoreMemoryKey = Field(..., description="The key identifier for the core memory entry to remove.")
+    field: str = Field(..., description="The specific field within the core memory entry to be remove.")
+    require_heartbeat: bool = Field(...,
+                                    description="Set this to true to get control back after execution, to chain functions together.")
+
+    def run(self, core_memory_manager: CoreMemoryManager):
+        return core_memory_manager.remove_from_core_memory(self.key.value, self.field)
+
+
+class RecallSearch(BaseModel):
     """
     Search for memories from the recall memory.
     """
     inner_thoughts: str = Field(..., description="Your inner thoughts while writing the search query.")
     event_types: Optional[list[EventType]] = Field(...,
-                                                   description="Event types to search. Can be system, 'user', 'assistant' or 'function'")
-    start_date: Optional[str] = Field(..., description='Start date to search events from. Format: "dd/mm/YY, H:M:S" eg. 01/01/2024, 08:00:30')
-    end_date: Optional[str] = Field(..., description='End date to search events from. Format: "dd/mm/YY, H:M:S" eg. 04/02/2024, 18:57:29')
-    keywords: Optional[List[str]] = Field(..., description='End date to search events from. Format: "dd/mm/YY, H:M:S" eg. 08/04/2023, 12:32:30')
+                                                   description="Event types to search. Can be 'system', 'user', 'assistant' or 'function'")
+    start_date: Optional[str] = Field(...,
+                                      description='Start date to search events from. Format: "dd/mm/YY, H:M:S" eg. "01/01/2024, 08:00:30"')
+    end_date: Optional[str] = Field(...,
+                                    description='End date to search events from. Format: "dd/mm/YY, H:M:S" eg. "04/02/2024, 18:57:29"')
+    keywords: Optional[List[str]] = Field(...,
+                                          description='End date to search events from. Format: "dd/mm/YY, H:M:S" eg. "08/04/2023, 12:32:30"')
     require_heartbeat: bool = Field(...,
                                     description="Set this to true to get control back after execution, to chain functions together.")
 
@@ -88,7 +112,8 @@ class ArchivalMemoryInsert(BaseModel):
     """
     inner_thoughts: str = Field(..., description="Your inner thoughts while adding archival memory.")
     memory: str = Field(..., description="The memory to be added to the archival memory.")
-    importance: float = Field(..., description="The importance of the memory to be added to the archival memory. Value from 1 to 10")
+    importance: float = Field(...,
+                              description="The importance of the memory to be added to the archival memory. Value from 1 to 10")
     require_heartbeat: bool = Field(...,
                                     description="Set this to true to get control back after execution, to chain functions together.")
 
@@ -127,6 +152,8 @@ class AgentCoreMemory:
 
         self.add_core_memory_tool = LlamaCppFunctionTool(AddCoreMemory,
                                                          core_memory_manager=self.core_memory_manager)
+        self.remove_core_memory_tool = LlamaCppFunctionTool(RemoveCoreMemory,
+                                                            core_memory_manager=self.core_memory_manager)
         self.replace_core_memory_tool = LlamaCppFunctionTool(ReplaceCoreMemory,
                                                              core_memory_manager=self.core_memory_manager)
 
@@ -134,10 +161,13 @@ class AgentCoreMemory:
         return self.core_memory_manager
 
     def get_tool_list(self):
-        return [self.add_core_memory_tool, self.replace_core_memory_tool]
+        return [self.add_core_memory_tool, self.remove_core_memory_tool, self.replace_core_memory_tool]
 
     def get_add_core_memory_tool(self):
         return self.add_core_memory_tool
+
+    def get_remove_core_memory_tool(self):
+        return self.remove_core_memory_tool
 
     def get_replace_core_memory_tool(self):
         return self.replace_core_memory_tool
@@ -157,7 +187,7 @@ class AgentEventMemory:
         self.Session = scoped_session(session_factory)
         self.session = self.Session()
         self.event_memory_manager = EventMemoryManager(self.session)
-        self.search_event_memory_manager_tool = LlamaCppFunctionTool(ConversationSearch,
+        self.search_event_memory_manager_tool = LlamaCppFunctionTool(RecallSearch,
                                                                      event_memory_manager=self.event_memory_manager)
 
     def get_event_memory_manager(self):

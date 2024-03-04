@@ -35,13 +35,17 @@ class CoreMemoryManager:
             return "Key or child key not found in core memory."
 
     def build_core_memory_context(self):
-        context = f""
-        for key, item in self.core_memory.items():
-            context += f"{{\n"
-            context += f"""   "{key}": {{\n"""
-            for key2, item2 in item.items():
-                context += f"""       "{key2}": {{\n{self.format_multiline_description(item2.strip(), 2)}\n       }}\n   }}\n"""
-            context += f"}}\n"
+        context = json.dumps(self.core_memory, indent=2)
+        #for key, item in self.core_memory.items():
+        #    context += f"{{\n"
+        #    context += f"""   "{key}": {{\n"""
+        #    for key2, item2 in item.items():
+        #        context += f"""       "{key2}": {{\n{self.format_multiline_description(item2.strip(), 2)}\n       }}\n   }}\n"""
+        #    if item == {}:
+        #        context += f"   }}\n"
+        #    context += f"}}\n"
+        if context == "":
+            context = "No Core Memories!"
         return context
 
     def format_multiline_description(self, description: str, indent_level: int) -> str:
