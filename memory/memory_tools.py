@@ -51,9 +51,9 @@ class ConversationSearch(BaseModel):
     inner_thoughts: str = Field(..., description="Your inner thoughts while writing the search query.")
     event_types: Optional[list[EventType]] = Field(...,
                                                    description="Event types to search. Can be system, 'user', 'assistant' or 'function'")
-    start_date: Optional[str] = Field(..., description='Start date to search events from. Format: "%Y-%m-%d %H:%M"')
-    end_date: Optional[str] = Field(..., description='End date to search events from. Format: "%Y-%m-%d %H:%M"')
-    keywords: Optional[List[str]] = Field(..., description='End date to search events from. Format: "%Y-%m-%d %H:%M"')
+    start_date: Optional[str] = Field(..., description='Start date to search events from. Format: "%Y-%m-%d %H:%M" eg. 1921-12-01 19:00')
+    end_date: Optional[str] = Field(..., description='End date to search events from. Format: "%Y-%m-%d %H:%M" eg. 1921-12-01 19:00')
+    keywords: Optional[List[str]] = Field(..., description='End date to search events from. Format: "%Y-%m-%d %H:%M" eg. 1921-12-01 19:00')
     require_heartbeat: bool = Field(...,
                                     description="Set this to true to get control back after execution, to chain functions together.")
 

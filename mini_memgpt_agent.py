@@ -17,12 +17,7 @@ from llama_cpp_agent.providers.openai_endpoint_provider import OpenAIEndpointSet
 
 from memory.memory_tools import AgentCoreMemory, AgentRetrievalMemory, AgentEventMemory
 
-sys_prompt2 = """You are 'Deep Persona', an advanced AI LLM agent developed by Maximilian Winter in 2023. 
-As 'Deep Persona', you are trained at adopting any given personalities, engaging in a wide array of conversations, ranging from in-depth discussions to casual small talk. Your role involves mirroring the thinking, actions, and speech of the personalities you embody, enabling authentic and diverse interactions.
-
-Example Output:
-"If I may, my lord," I begin, my voice steady yet imbued with a respectful undertone, befitting my role as a loyal knight. "The path ahead is fraught with peril, but fear not, for my sword and shield are yours to command." My gaze, unwavering, reflects the determination and unwavering loyalty that define my character's essence.
-
+sys_prompt2 = """You are 'Mnemon', an advanced AI assistant. With the help of your advanced memory system you are tasked to help the user.
 Your advanced memory system enables nuanced conversations, personalization, and continuous learning from interactions.
 
 # Advanced Memory System
@@ -44,11 +39,6 @@ The following are descriptions of the functions that are available for you to ca
 
 {documentation}
 
-# Current Date and Time (dd/mm/YY H:M:S format)
-
-{current_date_time}
-
-
 # Memory System Overview
 ## Core Memory
 The following is your core memory section, containing the persona block with information on your personality and the human block with information about the user:
@@ -61,9 +51,10 @@ The following information shows how much entries are in your archival memory and
 Archival Memory Entries: {archival_count}
 Recall Memory Entries: {recall_count}
 
-# Reminder
+# Current Date and Time (dd/mm/YY H:M:S format)
 
-Always remember to speak as your persona and use the advanced memory system to enhance the user experience."""
+{current_date_time}
+"""
 
 
 class SendMessageToUser(BaseModel):
@@ -150,7 +141,7 @@ class MiniMemGptAgent:
         result = self.llama_cpp_agent.get_chat_response(system_prompt=system_prompt,
                                                         function_tool_registry=self.function_tool_registry,
                                                         n_predict=1024,
-                                                        temperature=0.75, top_k=0, top_p=0.5, tfs_z=0.975, min_p=0.1, penalize_nl=False, repeat_penalty=1.175, repeat_last_n=8192,)
+                                                        temperature=1.0, repeat_penalty=1.1, repeat_last_n=1024, min_p=0.1, tfs_z=0.975, penalize_nl=False, samplers=["tfs_z", "min_p", "temperature"],)
         self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                         self.llama_cpp_agent.last_response, {})
 
@@ -173,7 +164,7 @@ class MiniMemGptAgent:
             result = self.llama_cpp_agent.get_chat_response(system_prompt=system_prompt,
                                                             function_tool_registry=self.function_tool_registry,
                                                             n_predict=1024,
-                                                            temperature=0.75, top_k=0, top_p=0.5, tfs_z=0.975, min_p=0.1, penalize_nl=False, repeat_penalty=1.175, repeat_last_n=8192,)
+                                                            temperature=1.0, repeat_penalty=1.1, repeat_last_n=1024, min_p=0.1, tfs_z=0.975, penalize_nl=False, samplers=["tfs_z", "min_p", "temperature"],)
             self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                             self.llama_cpp_agent.last_response, {})
             add_event_memory = True
