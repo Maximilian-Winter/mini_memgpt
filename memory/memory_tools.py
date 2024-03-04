@@ -18,7 +18,7 @@ class CoreMemoryKey(Enum):
     HUMAN: str = "human"
 
 
-class AddCoreMemory(BaseModel):
+class CoreMemoryAdd(BaseModel):
     """
     Add a new entry to the core memory.
     """
@@ -34,7 +34,7 @@ class AddCoreMemory(BaseModel):
 
 
 # Replace Core Memory Model
-class ReplaceCoreMemory(BaseModel):
+class CoreMemoryReplace(BaseModel):
     """
     Replace an entry in the core memory.
     """
@@ -51,13 +51,13 @@ class ReplaceCoreMemory(BaseModel):
 
 
 # Remove Core Memory Model
-class RemoveCoreMemory(BaseModel):
+class CoreMemoryRemove(BaseModel):
     """
     Remove an entry from the core memory.
     """
     inner_thoughts: str = Field(..., description="Your inner thoughts.")
     key: CoreMemoryKey = Field(..., description="The key identifier for the core memory entry to remove.")
-    field: str = Field(..., description="The specific field within the core memory entry to be remove.")
+    field: str = Field(..., description="The specific field within the core memory entry to be removed.")
     require_heartbeat: bool = Field(...,
                                     description="Set this to true to get control back after execution, to chain functions together.")
 
@@ -65,7 +65,7 @@ class RemoveCoreMemory(BaseModel):
         return core_memory_manager.remove_from_core_memory(self.key.value, self.field)
 
 
-class RecallSearch(BaseModel):
+class RecallMemorySearch(BaseModel):
     """
     Search for memories from the recall memory.
     """
@@ -150,11 +150,11 @@ class AgentCoreMemory:
         if self.core_memory_manager is not None:
             self.core_memory_manager.load(core_memory_file)
 
-        self.add_core_memory_tool = LlamaCppFunctionTool(AddCoreMemory,
+        self.add_core_memory_tool = LlamaCppFunctionTool(CoreMemoryAdd,
                                                          core_memory_manager=self.core_memory_manager)
-        self.remove_core_memory_tool = LlamaCppFunctionTool(RemoveCoreMemory,
+        self.remove_core_memory_tool = LlamaCppFunctionTool(CoreMemoryRemove,
                                                             core_memory_manager=self.core_memory_manager)
-        self.replace_core_memory_tool = LlamaCppFunctionTool(ReplaceCoreMemory,
+        self.replace_core_memory_tool = LlamaCppFunctionTool(CoreMemoryReplace,
                                                              core_memory_manager=self.core_memory_manager)
 
     def get_core_memory_manager(self):
@@ -187,7 +187,7 @@ class AgentEventMemory:
         self.Session = scoped_session(session_factory)
         self.session = self.Session()
         self.event_memory_manager = EventMemoryManager(self.session)
-        self.search_event_memory_manager_tool = LlamaCppFunctionTool(RecallSearch,
+        self.search_event_memory_manager_tool = LlamaCppFunctionTool(RecallMemorySearch,
                                                                      event_memory_manager=self.event_memory_manager)
 
     def get_event_memory_manager(self):
