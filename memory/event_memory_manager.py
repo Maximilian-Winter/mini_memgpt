@@ -75,4 +75,4 @@ class EventMemoryManager:
                 query = query.filter(Event.event_keywords.contains(value))
 
         events = query.all()
-        return "\n".join([str(event) for event in events])
+        return "\n".join([str(event) for event in events]) if events else "No events found matching the query."

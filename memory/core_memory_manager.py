@@ -7,32 +7,32 @@ class CoreMemoryManager:
 
     def add_to_core_memory(self, key: str, child_key: str, value) -> str:
         """
-        Adds or updates an entry in the core memory.
+        Adds or updates an entry in the IAM.
         """
         if key not in self.core_memory:
             self.core_memory[key] = {}
         self.core_memory[key][child_key] = value
-        return f"Core memory updated. Key: {key}, Child Key: {child_key}"
+        return f"IAM updated. Key: {key}, Child Key: {child_key}"
 
     def replace_in_core_memory(self, key: str, child_key: str, new_value) -> str:
         """
-        Replaces an existing entry in the core memory.
+        Replaces an existing entry in the IAM.
         """
         if key in self.core_memory and child_key in self.core_memory[key]:
             self.core_memory[key][child_key] = new_value
-            return f"Core memory replaced. Key: {key}, Child Key: {child_key}"
+            return f"IAM replaced. Key: {key}, Child Key: {child_key}"
         else:
-            return "Key or child key not found in core memory."
+            return "Key or child key not found in IAM."
 
     def remove_from_core_memory(self, key: str, child_key: str) -> str:
         """
-        Removes a specific field from a core memory entry.
+        Removes a specific field from a IAM entry.
         """
         if key in self.core_memory and child_key in self.core_memory[key]:
             del self.core_memory[key][child_key]
-            return f"Core memory entry removed. Key: {key}, Child Key: {child_key}"
+            return f"IAM entry removed. Key: {key}, Child Key: {child_key}"
         else:
-            return "Key or child key not found in core memory."
+            return "Key or child key not found in IAM."
 
     def build_core_memory_context(self):
         context = json.dumps(self.core_memory, indent=2)

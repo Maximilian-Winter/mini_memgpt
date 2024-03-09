@@ -18,68 +18,60 @@ class CoreMemoryKey(Enum):
     HUMAN: str = "human"
 
 
-class CoreMemoryAdd(BaseModel):
+class immediate_access_memory_add(BaseModel):
     """
-    Add a new entry to the core memory.
+    Add a new memory to the Immediate Access Memory (IAM).
     """
-    inner_thoughts: str = Field(..., description="Your inner thoughts.")
-    key: CoreMemoryKey = Field(..., description="The key identifier for the core memory entry.")
-    field: str = Field(..., description="A secondary key or field within the core memory entry.")
-    value: str = Field(..., description="The value or data to be stored in the specified core memory entry.")
-    require_heartbeat: bool = Field(...,
-                                    description="Set this to true to get control back after execution, to chain functions together.")
+
+    key: str = Field(..., description="The key identifier of the Immediate Access Memory (IAM) entry.")
+    field: str = Field(..., description="A secondary key or field within the Immediate Access Memory (IAM) entry.")
+    value: str = Field(..., description="The value or data to be stored in the specified Immediate Access Memory (IAM) entry.")
 
     def run(self, core_memory_manager: CoreMemoryManager):
-        return core_memory_manager.add_to_core_memory(self.key.value, self.field, self.value)
+        return core_memory_manager.add_to_core_memory(self.key, self.field, self.value)
 
 
-# Replace Core Memory Model
-class CoreMemoryReplace(BaseModel):
+# Replace Immediate Access Memory (IAM) Model
+class immediate_access_memory_replace(BaseModel):
     """
-    Replace an entry in the core memory.
+    Replace a memory in the Immediate Access Memory (IAM).
     """
-    inner_thoughts: str = Field(..., description="Your inner thoughts.")
-    key: CoreMemoryKey = Field(..., description="The key identifier for the core memory entry.")
-    field: str = Field(..., description="The specific field within the core memory entry to be replaced.")
+
+    key: str = Field(..., description="The key identifier of the Immediate Access Memory (IAM) entry.")
+    field: str = Field(..., description="The specific field within the Immediate Access Memory (IAM) entry to be replaced.")
     new_value: str = Field(...,
-                           description="The new value to replace the existing data in the specified core memory field.")
-    require_heartbeat: bool = Field(...,
-                                    description="Set this to true to get control back after execution, to chain functions together.")
+                           description="The new value to replace the existing data in the specified Immediate Access Memory (IAM) field.")
 
     def run(self, core_memory_manager: CoreMemoryManager):
-        return core_memory_manager.replace_in_core_memory(self.key.value, self.field, self.value)
+        return core_memory_manager.replace_in_core_memory(self.key, self.field, self.value)
 
 
-# Remove Core Memory Model
-class CoreMemoryRemove(BaseModel):
+# Remove Immediate Access Memory (IAM) Model
+class immediate_access_memory_remove(BaseModel):
     """
-    Remove an entry from the core memory.
+    Remove a memory field from the Immediate Access Memory (IAM).
     """
-    inner_thoughts: str = Field(..., description="Your inner thoughts.")
-    key: CoreMemoryKey = Field(..., description="The key identifier for the core memory entry to remove.")
-    field: str = Field(..., description="The specific field within the core memory entry to be removed.")
-    require_heartbeat: bool = Field(...,
-                                    description="Set this to true to get control back after execution, to chain functions together.")
+
+    key: str = Field(..., description="The key identifier of the Immediate Access Memory (IAM) entry to remove.")
+    field: str = Field(..., description="The specific field within the Immediate Access Memory (IAM) entry to be removed.")
 
     def run(self, core_memory_manager: CoreMemoryManager):
-        return core_memory_manager.remove_from_core_memory(self.key.value, self.field)
+        return core_memory_manager.remove_from_core_memory(self.key, self.field)
 
 
-class RecallMemorySearch(BaseModel):
+class interactive_memory_bank_Search(BaseModel):
     """
-    Search for memories from the recall memory.
+    Search for memories from the Interactive Memory Bank (IMB).
     """
-    inner_thoughts: str = Field(..., description="Your inner thoughts while writing the search query.")
+
     event_types: Optional[list[EventType]] = Field(...,
-                                                   description="Event types to search. Can be 'system', 'user', 'assistant' or 'function'")
+                                                   description="Memory type to search. Can be 'system', 'user', 'assistant' or 'function'")
     start_date: Optional[str] = Field(...,
-                                      description='Start date to search events from. Format: "dd/mm/YY, H:M:S" eg. "01/01/2024, 08:00:30"')
+                                      description='Start date to search memories from. Format: "dd/mm/YY, H:M:S" eg. "01/01/2024, 08:00:30"')
     end_date: Optional[str] = Field(...,
-                                    description='End date to search events from. Format: "dd/mm/YY, H:M:S" eg. "04/02/2024, 18:57:29"')
+                                    description='End date to search memories from. Format: "dd/mm/YY, H:M:S" eg. "04/02/2024, 18:57:29"')
     keywords: Optional[List[str]] = Field(...,
-                                          description='End date to search events from. Format: "dd/mm/YY, H:M:S" eg. "08/04/2023, 12:32:30"')
-    require_heartbeat: bool = Field(...,
-                                    description="Set this to true to get control back after execution, to chain functions together.")
+                                          description='End date to search memories from. Format: "dd/mm/YY, H:M:S" eg. "08/04/2023, 12:32:30"')
 
     def run(self, event_memory_manager: EventMemoryManager):
         parsed_start_datetime = None
@@ -93,29 +85,25 @@ class RecallMemorySearch(BaseModel):
                                                  start_date=parsed_start_datetime, end_date=parsed_end_datetime)
 
 
-class ArchivalMemorySearch(BaseModel):
+class conceptual_knowledge_vault_search(BaseModel):
     """
-    Retrieve memories from the archival memory based on a query.
+    Retrieve information from the Conceptual Knowledge Vault (CKV).
     """
-    inner_thoughts: str = Field(..., description="Your inner thoughts while writing the archival query.")
-    query: str = Field(..., description="The query to be used to retrieve memories from the archival memory.")
-    require_heartbeat: bool = Field(...,
-                                    description="Set this to true to get control back after execution, to chain functions together.")
+
+    query: str = Field(..., description="Query to be used to retrieve information from the Conceptual Knowledge Vault (CKV).")
 
     def run(self, retrieval_memory_manager: RetrievalMemoryManager):
         return retrieval_memory_manager.retrieve_memories(self.query)
 
 
-class ArchivalMemoryInsert(BaseModel):
+class conceptual_knowledge_vault_insert(BaseModel):
     """
-    Add memory to the archival memory.
+    Add information to the Conceptual Knowledge Vault (CKV).
     """
-    inner_thoughts: str = Field(..., description="Your inner thoughts while adding archival memory.")
-    memory: str = Field(..., description="The memory to be added to the archival memory.")
+
+    memory: str = Field(..., description="The information to be added to the Conceptual Knowledge Vault (CKV).")
     importance: float = Field(...,
-                              description="The importance of the memory to be added to the archival memory. Value from 1 to 10")
-    require_heartbeat: bool = Field(...,
-                                    description="Set this to true to get control back after execution, to chain functions together.")
+                              description="The importance of the information to be added to the Conceptual Knowledge Vault (CKV). Value from 1 to 10")
 
     def run(self, retrieval_memory_manager: RetrievalMemoryManager):
         return retrieval_memory_manager.add_memory_to_retrieval(self.memory, self.importance)
@@ -126,9 +114,9 @@ class AgentRetrievalMemory:
                  collection_name="retrieval_memory_collection"):
         self.retrieval_memory = RetrievalMemory(persistent_db_path, embedding_model_name, collection_name)
         self.retrieval_memory_manager = RetrievalMemoryManager(self.retrieval_memory)
-        self.retrieve_memories_tool = LlamaCppFunctionTool(ArchivalMemorySearch,
+        self.retrieve_memories_tool = LlamaCppFunctionTool(conceptual_knowledge_vault_search,
                                                            retrieval_memory_manager=self.retrieval_memory_manager)
-        self.add_retrieval_memory_tool = LlamaCppFunctionTool(ArchivalMemoryInsert,
+        self.add_retrieval_memory_tool = LlamaCppFunctionTool(conceptual_knowledge_vault_insert,
                                                               retrieval_memory_manager=self.retrieval_memory_manager)
 
     def get_tool_list(self):
@@ -150,11 +138,11 @@ class AgentCoreMemory:
         if self.core_memory_manager is not None:
             self.core_memory_manager.load(core_memory_file)
 
-        self.add_core_memory_tool = LlamaCppFunctionTool(CoreMemoryAdd,
+        self.add_core_memory_tool = LlamaCppFunctionTool(immediate_access_memory_add,
                                                          core_memory_manager=self.core_memory_manager)
-        self.remove_core_memory_tool = LlamaCppFunctionTool(CoreMemoryRemove,
+        self.remove_core_memory_tool = LlamaCppFunctionTool(immediate_access_memory_remove,
                                                             core_memory_manager=self.core_memory_manager)
-        self.replace_core_memory_tool = LlamaCppFunctionTool(CoreMemoryReplace,
+        self.replace_core_memory_tool = LlamaCppFunctionTool(immediate_access_memory_replace,
                                                              core_memory_manager=self.core_memory_manager)
 
     def get_core_memory_manager(self):
@@ -187,7 +175,7 @@ class AgentEventMemory:
         self.Session = scoped_session(session_factory)
         self.session = self.Session()
         self.event_memory_manager = EventMemoryManager(self.session)
-        self.search_event_memory_manager_tool = LlamaCppFunctionTool(RecallMemorySearch,
+        self.search_event_memory_manager_tool = LlamaCppFunctionTool(interactive_memory_bank_Search,
                                                                      event_memory_manager=self.event_memory_manager)
 
     def get_event_memory_manager(self):

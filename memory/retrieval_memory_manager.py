@@ -12,7 +12,7 @@ class RetrievalMemoryManager:
         Adds a memory with a given description and importance to the memory stream.
         """
         self.retrieval_memory.add_memory(description, importance=importance)
-        return f"Memory: '{description}' added to archival memory."
+        return f"Memory: '{description}' added to CKV."
 
     def retrieve_memories(self, query: str, max_results: int = 5) -> str:
         """
