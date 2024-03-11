@@ -6,13 +6,13 @@ from llama_cpp_agent.providers.llama_cpp_endpoint_provider import LlamaCppEndpoi
 from mini_memgpt_agent import MiniMemGptAgent
 main_model = LlamaCppEndpointSettings(completions_endpoint_url="http://127.0.0.1:8080/completion")
 
-SYS_PROMPT_START_NEURAL_CHAT = """### System:\n"""
+SYS_PROMPT_START_NEURAL_CHAT = """### Instructions:\n"""
 SYS_PROMPT_END_NEURAL_CHAT = """\n"""
 USER_PROMPT_START_NEURAL_CHAT = """### User:\n"""
 USER_PROMPT_END_NEURAL_CHAT = """ \n"""
-ASSISTANT_PROMPT_START_NEURAL_CHAT = """### Assistant:\n"""
+ASSISTANT_PROMPT_START_NEURAL_CHAT = """### Agent:\n"""
 ASSISTANT_PROMPT_END_NEURAL_CHAT = """\n"""
-FUNCTION_PROMPT_START_NEURAL_CHAT = """### Function:\n"""
+FUNCTION_PROMPT_START_NEURAL_CHAT = """### Function Response:\n"""
 FUNCTION_PROMPT_END_NEURAL_CHAT = """\n"""
 DEFAULT_NEURAL_CHAT_STOP_SEQUENCES = ["### User:"]
 

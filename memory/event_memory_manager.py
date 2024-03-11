@@ -56,8 +56,8 @@ class EventMemoryManager:
         return "Event modified successfully."
 
     def query_events(self, event_types: list = None, start_date: datetime.datetime = None,
-                     end_date: datetime.datetime = None,
-                     content_keywords: list = None, keywords: list = None) -> str:
+                     end_date: datetime.datetime = None, content_keywords: list = None,
+                     keywords: list = None, page: int = 1, page_size: int = 5) -> str:
         query = self.session.query(Event)
 
         # Filtering based on provided criteria
@@ -65,14 +65,21 @@ class EventMemoryManager:
             query = query.filter(Event.event_type.in_(event_types))
         if start_date and end_date:
             query = query.filter(Event.timestamp.between(start_date, end_date))
-
-        if content_keywords is not None:
+        if content_keywords:
             for keyword in content_keywords:
                 query = query.filter(Event.content.contains(keyword))
-
         if keywords:
             for value in keywords:
                 query = query.filter(Event.event_keywords.contains(value))
 
-        events = query.all()
-        return "\n".join([str(event) for event in events]) if events else "No events found matching the query."
+        # Calculate offset for paging
+        offset_value = (page - 1) * page_size
+        # Apply limit and offset to the query for paging
+        events = query.limit(page_size).offset(offset_value).all()
+
+        formatted_events = "\n".join([json.dumps(event, indent=2) for event in events])
+
+        if formatted_events:
+            formatted_events += f"\n\nPage {page} of {query.count() // page_size + 1}"
+
+        return formatted_events if formatted_events else "No recall memories found matching the query."
